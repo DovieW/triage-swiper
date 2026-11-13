@@ -12,6 +12,7 @@
 data/
 imports/
 exports/
+channel-avatars/
 # Generated files and local environments
 __pycache__/
 *.py[cod]

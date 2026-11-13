@@ -96,18 +96,30 @@ function showNote(v, container, label, text) {
     $(text).scrollTop = 0;
   }
 }
+function renderByline(id, video) {
+  const row = $(id);
+  const key = `${video.channel_id || video.channel}|${video.channel_avatar_url || ''}`;
+  if (row.dataset.channelKey !== key) {
+    const avatar = element('span', video.channel.trim().slice(0, 1), 'channel-avatar');
+    avatar.setAttribute('aria-hidden', 'true');
+    if (video.channel_avatar_url?.startsWith('/api/channel-avatar?')) {
+      const img = element('img');
+      img.src = video.channel_avatar_url;
+      img.alt = ''; img.width = 24; img.height = 24; img.draggable = false;
+      img.addEventListener('error', () => img.remove());
+      avatar.append(img);
+    }
+    row.replaceChildren(avatar, element('span', '', 'byline-text'));
+    row.dataset.channelKey = key;
+  }
+  row.querySelector('.byline-text').textContent = `${video.channel} · ${duration(video.duration_seconds)}`;
+}
 function showCard(v) {
   if (currentId === v.id) {updateCardMetadata(v); loadMetadata(v); return;}
-  const changing = currentId !== null;
   currentId = v.id;
   $('reason').scrollTop = 0;
-  if (changing) {
-    card.classList.remove('arriving');
-    void card.offsetWidth;
-    card.classList.add('arriving');
-  }
   $('title').textContent = v.title;
-  $('byline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
+  renderByline('byline', v);
   updateCardMetadata(v);
   $('watch').href = v.url;
   $('chips').textContent = v.category;
@@ -128,7 +140,7 @@ function showNext(v) {
   $('nextCard').hidden = !v;
   if (!v) {nextId = null; return;}
   if (v.id === nextId) {
-    $('nextByline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
+    renderByline('nextByline', v);
     showNote(v, 'nextNote', 'nextNoteLabel', 'nextNoteText');
     loadMetadata(v); return;
   }
@@ -140,7 +152,7 @@ function showNext(v) {
   $('nextMedia').replaceChildren(img);
   $('nextTitle').textContent = v.title;
   $('nextTopic').textContent = v.category;
-  $('nextByline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
+  renderByline('nextByline', v);
   showNote(v, 'nextNote', 'nextNoteLabel', 'nextNoteText');
   loadMetadata(v);
 }
@@ -170,10 +182,14 @@ async function decide(id, status, undo = false) {
     error(err.message); $('saveStatus').textContent = 'Choice not saved';
   } finally {
     await animation;
-    resetCard();
+    // Swap content and reset the reused element without an offscreen-to-center transition.
+    card.classList.add('resetting');
     busy = false;
-    document.querySelectorAll('.action').forEach(b => b.disabled = false);
     render();
+    resetCard();
+    void card.offsetWidth;
+    card.classList.remove('resetting');
+    document.querySelectorAll('.action').forEach(b => b.disabled = false);
   }
 }
 async function undo() {
@@ -200,7 +216,7 @@ async function refresh() {
 const metadataRequests = new Map();
 function updateCardMetadata(v) {
   showNote(v, 'cardNote', 'noteLabel', 'reason');
-  $('byline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
+  renderByline('byline', v);
   const badge = $('media').querySelector('.duration');
   if (badge) badge.textContent = duration(v.duration_seconds);
   $('readDescription').hidden = !v.description?.trim();
@@ -318,7 +334,7 @@ function moveCard(dx, dy) {
   card.querySelector('.stamp-pass').style.opacity = Math.min(1, Math.max(0, -dx / 90));
 }
 function exitCard(status) {
-  card.classList.remove('dragging', 'arriving');
+  card.classList.remove('dragging');
   card.classList.add('leaving');
   const direction = status === 'pass' ? -1 : 1;
   if (status.startsWith('maybe')) {
@@ -333,7 +349,7 @@ const gesture = Swipe.attach(card, {
   canStart: e => !busy && !$('tagDialog').open && !e.target.closest('a,button,iframe'),
   isScrollTarget: e => !!e.target.closest('.note-scroll'),
   onActive: active => {pointer = active;},
-  onMove: (dx, dy) => {card.classList.remove('arriving'); card.classList.add('dragging'); moveCard(dx, dy);},
+  onMove: (dx, dy) => {card.classList.add('dragging'); moveCard(dx, dy);},
   onRelease: choice => decide(currentId, choice),
   onCancel: resetCard
 });

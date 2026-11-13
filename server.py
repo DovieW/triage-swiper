@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -22,6 +23,9 @@ def make_handler(source, database, extra_source=None):
         extras = json.loads(Path(extra_source).read_text())['videos']
         videos += [v for v in extras if v['id'] not in original_ids]
     ids = {v['id'] for v in videos}
+    by_id = {v['id']: v for v in videos}
+    channel_ids = {v['channel_id'] for v in videos if v.get('channel_id')}
+    avatar_directory = Path(database).parent / 'channel-avatars'
     if not videos or len(videos) != len(ids):
         raise ValueError('Expected a nonempty catalog with unique video IDs')
     Path(database).parent.mkdir(parents=True, exist_ok=True)
@@ -32,7 +36,7 @@ def make_handler(source, database, extra_source=None):
         ensure_metadata(db)
 
     class Handler(BaseHTTPRequestHandler):
-        def send(self, status, body, mime='application/json', filename=None):
+        def send(self, status, body, mime='application/json', filename=None, cache='no-store'):
             if mime == 'application/json':
                 body = json.dumps(body, ensure_ascii=False).encode()
             elif isinstance(body, str):
@@ -40,7 +44,7 @@ def make_handler(source, database, extra_source=None):
             self.send_response(status)
             self.send_header('Content-Type', mime)
             self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Cache-Control', cache)
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
             self.send_header('Content-Security-Policy', "default-src 'self'; img-src 'self' https://i.ytimg.com; frame-src https://www.youtube-nocookie.com; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'")
@@ -58,21 +62,52 @@ def make_handler(source, database, extra_source=None):
                 row = db.execute('SELECT tags,revision FROM settings WHERE id=1').fetchone()
             return {'tags': json.loads(row[0]) if row else DEFAULT_TAGS, 'revision': row[1] if row else 0}
 
+        def channel_avatar(self, cid):
+            if cid not in channel_ids or not re.fullmatch(r'UC[\w-]{22}', cid):
+                return None
+            for ext, mime in (('.jpg', 'image/jpeg'), ('.png', 'image/png'), ('.webp', 'image/webp')):
+                path = avatar_directory / (cid + ext)
+                if path.is_file():
+                    return path, mime
+            return None
+
+        def avatar_link(self, cid):
+            avatar = self.channel_avatar(cid)
+            return f'/api/channel-avatar?id={cid}&v={avatar[0].stat().st_mtime_ns}' if avatar else None
+
         def catalog(self):
             cached = cached_metadata(database)
-            return [dict(v, **{key: value for key, value in cached.get(v['id'], {}).items() if key != 'description'}) for v in videos]
+            avatars = {cid: self.avatar_link(cid) for cid in channel_ids}
+            result = []
+            for v in videos:
+                enriched = dict(v, **{key: value for key, value in cached.get(v['id'], {}).items() if key != 'description'})
+                if avatars.get(v.get('channel_id')):
+                    enriched['channel_avatar_url'] = avatars[v['channel_id']]
+                result.append(enriched)
+            return result
 
         def do_GET(self):
             path = urlparse(self.path).path
             if path == '/api/talks':
                 return self.send(200, {'videos': self.catalog()})
+            if path == '/api/channel-avatar':
+                cid = parse_qs(urlparse(self.path).query).get('id', [''])[0]
+                avatar = self.channel_avatar(cid)
+                if not avatar:
+                    return self.send(404, {'error': 'Avatar not cached'})
+                file, mime = avatar
+                return self.send(200, file.read_bytes(), mime, cache='private, max-age=86400')
             if path == '/api/settings':
                 return self.send(200, self.settings())
             if path == '/api/metadata':
                 vid = parse_qs(urlparse(self.path).query).get('id', [''])[0]
                 if vid not in ids:
                     return self.send(404, {'error': 'Unknown video'})
-                return self.send(200, cached_metadata(database, vid))
+                data = cached_metadata(database, vid)
+                avatar = self.avatar_link(by_id[vid].get('channel_id'))
+                if avatar:
+                    data['channel_avatar_url'] = avatar
+                return self.send(200, data)
             if path == '/api/decisions':
                 return self.send(200, self.state())
             if path in ('/api/export.json', '/api/export.txt'):

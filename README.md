@@ -156,6 +156,19 @@ the server. Reload to refresh all catalog runtimes, or let current/next card
 metadata load normally. New cache tables require one server restart when
 upgrading from a version without this feature.
 
+## Channel avatars
+
+```sh
+python3 fetch_channels.py
+```
+
+Caches one small avatar per channel in the base catalog. Images stay in
+`~/.local/share/ai-talk-picker/channel-avatars/` and are served locally before the
+channel name, with an initial as a fallback. Cached files are skipped on re-run;
+the batch stops on rate limiting. Use `--source` or `--output-directory` for
+other locations. A custom server database expects avatars in its sibling
+`channel-avatars` folder. Reload the page after caching avatars.
+
 ## Tests
 
 Python tests use temporary databases and the public example catalog. Node.js
