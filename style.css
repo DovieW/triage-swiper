@@ -80,7 +80,7 @@ select { min-width: 0; width: 100%; font-size: 12px; background: var(--panel); c
 .card-note { flex: 1; min-height: 0; overflow: hidden; }
 .card-note > span { display: block; color: var(--muted); font-size: 9px; font-weight: 550; letter-spacing: .3px; margin-bottom: 7px; }
 .card-note p { flex: 1 1 0; min-height: 0; color: #c2c2cc; font-size: 12px; line-height: 1.65; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; overflow-x: hidden; padding-right: 6px; touch-action: pan-y pinch-zoom; overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: #55515f transparent; }
-.note-scroll { user-select: text; -webkit-user-select: text; }
+.note-scroll { user-select: none; -webkit-user-select: none; }
 .card-note p::-webkit-scrollbar { width: 5px; }
 .card-note p::-webkit-scrollbar-thumb { background: #55515f; border-radius: 4px; }
 .chips, #nextTopic, h1, #nextTitle, .byline, #nextByline, .card-links { flex-shrink: 0; }

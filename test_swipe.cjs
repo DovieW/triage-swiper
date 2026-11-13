@@ -22,7 +22,7 @@ test('desktop threshold remains reachable and compact screens scale down', () =>
 
 // Simulates the event lifecycle, including the child capture-loss event that
 // Android touch input can bubble up when capture transfers to the card.
-function fixture() {
+function fixture({scrollable = false} = {}) {
   const listeners = {}, moves = [], releases = [], active = [];
   let cancelled = 0, captured = false;
   const card = {
@@ -37,7 +37,7 @@ function fixture() {
   };
   const child = {closest: () => null};
   const controller = require('./swipe.js').attach(card, {
-    canStart: e => !e.target.closest('button'), onActive:x=>active.push(x),
+    canStart: e => !e.target.closest('button'), isScrollTarget: () => scrollable, onActive:x=>active.push(x),
     onMove:(...x)=>moves.push(x), onRelease:x=>releases.push(x), onCancel:()=>cancelled++
   });
   function emit(type, overrides={}) {
@@ -84,4 +84,35 @@ test('preview controls remain tappable and page blur cancels an active drag', ()
   f.emit('pointerdown');f.controller.cancel();
   assert.equal(f.cancelled,1);
   assert.deepEqual(f.releases,[]);
+});
+
+test('horizontal drags starting in the description swipe in either direction', () => {
+  for (const direction of [-1, 1]) {
+    const f=fixture({scrollable:true});
+    f.emit('pointerdown');
+    f.emit('lostpointercapture'); // transfer from description to card must be safe
+    f.emit('pointermove',{clientX:direction*100,clientY:12,timeStamp:100});
+    f.emit('pointerup',{clientX:direction*100,clientY:12,timeStamp:110});
+    assert.deepEqual(f.releases,[direction>0?'keep':'pass']);
+    assert.equal(f.cancelled,0);
+  }
+});
+test('vertical description gestures release the card and cannot later commit', () => {
+  const f=fixture({scrollable:true});f.emit('pointerdown');
+  f.emit('pointermove',{clientX:4,clientY:30,timeStamp:50});
+  f.emit('pointermove',{clientX:110,clientY:35,timeStamp:100});
+  f.emit('pointerup',{clientX:110,clientY:35,timeStamp:110});
+  assert.equal(f.cancelled,1);
+  assert.deepEqual(f.moves,[]);
+  assert.deepEqual(f.releases,[]);
+  assert.equal(f.card.hasPointerCapture(1),false);
+});
+test('small diagonal movement does not steal a later horizontal description swipe', () => {
+  const f=fixture({scrollable:true});f.emit('pointerdown');
+  f.emit('pointermove',{clientX:3,clientY:5,timeStamp:20});
+  f.emit('pointermove',{clientX:12,clientY:11,timeStamp:40});
+  assert.deepEqual(f.moves,[]);
+  f.emit('pointermove',{clientX:100,clientY:15,timeStamp:100});
+  f.emit('pointerup',{clientX:100,clientY:15,timeStamp:110});
+  assert.deepEqual(f.releases,['keep']);
 });

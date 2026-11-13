@@ -27,8 +27,9 @@ public videos in `catalog.example.json`.
 - Keyboard: ← / →, 1 / 2 / 3, and Z to undo.
 - Undo applies to choices made in the current tab session. Other decisions can
   be edited from Shortlist, Tagged, and Tossed.
-- The card reserves single-finger gestures for swiping; pinch zoom remains
-  available. Use the Shortlist link or scroll outside the card for filters.
+- Horizontal gestures anywhere on the card, including the description, swipe
+  the card. Vertical gestures in the description scroll its text; pinch zoom
+  remains available. Use the Shortlist link or scroll outside the card for filters.
 - Preview videos in an overlay, or open them on YouTube if embedding is disabled.
 - Export the full Keep shortlist as JSON or one video URL per line. Filters only
   affect the displayed list.

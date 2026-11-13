@@ -329,7 +329,8 @@ function exitCard(status) {
   return new Promise(resolve => setTimeout(resolve, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240));
 }
 const gesture = Swipe.attach(card, {
-  canStart: e => !busy && !$('tagDialog').open && !e.target.closest('a,button,iframe,.note-scroll'),
+  canStart: e => !busy && !$('tagDialog').open && !e.target.closest('a,button,iframe'),
+  isScrollTarget: e => !!e.target.closest('.note-scroll'),
   onActive: active => {pointer = active;},
   onMove: (dx, dy) => {card.classList.remove('arriving'); card.classList.add('dragging'); moveCard(dx, dy);},
   onRelease: choice => decide(currentId, choice),
