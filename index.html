@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111113"><title>Dovie's Triage Swiper</title><link rel="stylesheet" href="/style.css"><script src="/swipe.js" defer></script><script src="/app.js" defer></script></head>
+<body>
+<main>
+<div id="error" role="alert" hidden></div>
+<section id="discover" aria-label="Swipe talks">
+<header><strong>Dovie's Triage Swiper</strong><span id="remaining">Loading…</span><a href="#library" aria-label="Shortlist and filters">Shortlist <span id="headerKeptCount">0</span></a></header>
+<div class="card-stage"><div id="nextCard" class="next-card" aria-hidden="true" hidden><div class="next-media" id="nextMedia"></div><div class="next-copy"><span id="nextTopic"></span><h2 id="nextTitle"></h2><p id="nextByline"></p></div></div><article id="card" tabindex="0" aria-label="Talk card"><div class="media" id="media"></div><div class="card-copy"><div class="chips" id="chips"></div><h1 id="title"></h1><p class="byline" id="byline"></p><a id="watch" target="_blank" rel="noopener noreferrer">YouTube ↗</a></div><span class="swipe-stamp stamp-keep" aria-hidden="true">KEEP</span><span class="swipe-stamp stamp-pass" aria-hidden="true">PASS</span></article>
+<div id="empty" hidden><h2>All done.</h2><p>Review your shortlist or change the filters below.</p><button id="clearFilters">Clear filters</button></div></div>
+<div class="actions" id="actions" aria-label="Maybe levels"><button id="maybe1" class="action maybe-high" title="Maybe 1: strongest interest">Maybe 1</button><button id="maybe2" class="action maybe-medium" title="Maybe 2: undecided">Maybe 2</button><button id="maybe3" class="action maybe-low" title="Maybe 3: long shot">Maybe 3</button></div>
+<div class="under"><button id="undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5-4 4 4 4M4 9h9a6 6 0 0 1 0 12"/></svg>Undo</button><span id="gestureStatus" role="status">← Pass · Keep →</span></div>
+</section>
+<section id="library" aria-label="Library and filters">
+<div class="library-top"><strong><span id="keptCount">0</span> kept <span class="muted">· <span id="keptTime">0m selected</span></span></strong><small id="saveStatus" role="status">Connecting…</small></div>
+<nav aria-label="Views"><button class="tab active" data-view="pending">Swipe <span id="pendingCount"></span></button><button class="tab" data-view="keep">Shortlist</button><button class="tab" data-view="maybe">Maybe</button><button class="tab" data-view="pass">Passed</button></nav>
+<section class="toolbar" aria-label="Filters"><label>Topic<select id="topic"><option value="">All topics</option></select></label><label>Channel<select id="channel"><option value="">All channels</option></select></label><label>Length<select id="duration"><option value="">Any length</option><option value="short">Up to 30 min</option><option value="long">Over 30 min</option><option value="unknown">Runtime unknown</option></select></label><label>Order<select id="order"><option value="channel">Channel order</option><option value="shuffle">Shuffle</option></select></label><label id="maybeFilter" hidden>Maybe level<select id="maybeLevel"><option value="">All levels</option><option value="maybe1">Maybe 1 · Strongest</option><option value="maybe2">Maybe 2 · Undecided</option><option value="maybe3">Maybe 3 · Long shot</option></select></label></section>
+<details id="talkNotes"><summary>About this talk</summary><p id="reason"></p></details>
+<section id="results" hidden><div class="results-heading"><div><h2 id="listTitle">Your shortlist</h2><p id="listSummary"></p></div><div id="exports"><a class="export" href="/api/export.json">Export JSON ↗</a><a class="export" href="/api/export.txt">Video links ↗</a></div></div><div id="list"></div></section>
+</section>
+</main>
+<dialog id="previewDialog" aria-label="Video preview"><button id="closePreview" autofocus aria-label="Close video preview">Close <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div id="player"></div></dialog>
+</body></html>

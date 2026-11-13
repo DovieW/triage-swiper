@@ -1,0 +1,43 @@
+{
+  "videos": [
+    {
+      "id": "LPZh9BOjkQs",
+      "url": "https://www.youtube.com/watch?v=LPZh9BOjkQs",
+      "title": "Large Language Models explained briefly",
+      "channel": "3Blue1Brown",
+      "channel_id": "UCYO_jab_esuFRV4b17AJtAw",
+      "channel_handle": "3blue1brown",
+      "channel_url": "https://www.youtube.com/@3blue1brown",
+      "category": "Foundations and safety",
+      "duration_seconds": 478,
+      "published_date": "2024-11-20",
+      "reason": "A short introduction to large language models."
+    },
+    {
+      "id": "eMlx5fFNoYc",
+      "url": "https://www.youtube.com/watch?v=eMlx5fFNoYc",
+      "title": "Attention in transformers, step-by-step | Deep Learning Chapter 6",
+      "channel": "3Blue1Brown",
+      "channel_id": "UCYO_jab_esuFRV4b17AJtAw",
+      "channel_handle": "3blue1brown",
+      "channel_url": "https://www.youtube.com/@3blue1brown",
+      "category": "Foundations and safety",
+      "duration_seconds": 1569,
+      "published_date": "2024-04-07",
+      "reason": "An older foundational visual explanation of attention, masking, and context."
+    },
+    {
+      "id": "wjZofJX0v4M",
+      "url": "https://www.youtube.com/watch?v=wjZofJX0v4M",
+      "title": "Transformers, the tech behind LLMs | Deep Learning Chapter 5",
+      "channel": "3Blue1Brown",
+      "channel_id": "UCYO_jab_esuFRV4b17AJtAw",
+      "channel_handle": "3blue1brown",
+      "channel_url": "https://www.youtube.com/@3blue1brown",
+      "category": "Foundations and safety",
+      "duration_seconds": 1634,
+      "published_date": "2024-04-01",
+      "reason": "An older foundational explanation of transformer data flow, embeddings, and sampling."
+    }
+  ]
+}

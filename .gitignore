@@ -1,0 +1,21 @@
+# Local catalogs, watch history, exports, and private configuration
+*.json
+!catalog.example.json
+*.zip
+*.sqlite*
+*.db
+*.db-*
+*.log
+.env
+.env.*
+.local/
+data/
+imports/
+exports/
+# Generated files and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.DS_Store
