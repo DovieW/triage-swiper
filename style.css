@@ -26,7 +26,7 @@ header a { display: inline-flex; align-items: center; gap: 8px; min-height: 40px
 #headerKeptCount { display: inline-flex; justify-content: center; align-items: center; min-width: 23px; height: 23px; padding: 0 6px; border-radius: 8px; background: #29292f; font-size: 10px; font-variant-numeric: tabular-nums; }
 .card-stage { position: relative; isolation: isolate; flex: 1; min-height: 0; }
 #card, .next-card { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--panel); border: 1px solid #393940; border-radius: 22px; overflow: hidden; }
-#card { z-index: 1; box-shadow: 0 10px 30px #0003; touch-action: pinch-zoom; user-select: none; -webkit-user-select: none; transform-origin: 50% 85%; will-change: transform; transition: transform .24s cubic-bezier(.2,.8,.25,1), opacity .2s; }
+#card { z-index: 1; box-shadow: 0 10px 30px #0003; touch-action: pan-y pinch-zoom; user-select: none; -webkit-user-select: none; transform-origin: 50% 85%; will-change: transform; transition: transform .24s cubic-bezier(.2,.8,.25,1), opacity .2s; }
 #card.dragging { transition: none; }
 #card.leaving { pointer-events: none; }
 #card.arriving { animation: arrive .22s ease-out; }
@@ -42,7 +42,10 @@ header a { display: inline-flex; align-items: center; gap: 8px; min-height: 40px
 .chips, #nextTopic { font-size: 10px; font-weight: 550; letter-spacing: .45px; color: #b8b0d5; }
 h1, #nextTitle { font-size: clamp(18px, 5.2vw, 27px); line-height: 1.28; letter-spacing: -.55px; font-weight: 620; margin: 0; overflow-wrap: anywhere; text-wrap: pretty; }
 .byline, #nextByline { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0; }
-.card-copy > a { color: var(--muted); font-size: 11px; margin-top: auto; padding: 10px 0 4px; width: fit-content; text-decoration: none; }
+.card-links { display: flex; align-items: center; gap: 22px; flex-shrink: 0; margin-top: auto; }
+.card-links a, #readDescription { color: var(--muted); font: inherit; font-size: 11px; padding: 10px 0 4px; text-decoration: none; background: none; border: 0; }
+/* Only the text pane scrolls. Other card surfaces retain dedicated swipe handling. */
+.media, .chips, #card h1, .byline, .card-links, .card-note > span { touch-action: pinch-zoom; }
 .swipe-stamp { position: absolute; top: 25px; z-index: 2; pointer-events: none; border: 2px solid currentColor; border-radius: 9px; font-size: 25px; letter-spacing: 2px; font-weight: 750; padding: 6px 12px; opacity: 0; background: #111113e8; }
 .stamp-keep { left: 20px; transform: rotate(-12deg); color: #cec3fc; }
 .stamp-pass { right: 20px; transform: rotate(12deg); color: #efb5b5; }
@@ -76,8 +79,11 @@ nav { display: flex; justify-content: space-between; gap: 16px; margin: 20px 0 2
 select { min-width: 0; width: 100%; font-size: 12px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; min-height: 46px; padding: 10px; }
 .card-note { flex: 1; min-height: 0; overflow: hidden; }
 .card-note > span { display: block; color: var(--muted); font-size: 9px; font-weight: 550; letter-spacing: .3px; margin-bottom: 7px; }
-.card-note p { color: #c2c2cc; font-size: 12px; line-height: 1.65; margin: 0; white-space: pre-line; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
-.chips, #nextTopic, h1, #nextTitle, .byline, #nextByline, .card-copy > a { flex-shrink: 0; }
+.card-note p { flex: 1 1 0; min-height: 0; color: #c2c2cc; font-size: 12px; line-height: 1.65; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; overflow-x: hidden; padding-right: 6px; touch-action: pan-y pinch-zoom; overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: #55515f transparent; }
+.note-scroll { user-select: text; -webkit-user-select: text; }
+.card-note p::-webkit-scrollbar { width: 5px; }
+.card-note p::-webkit-scrollbar-thumb { background: #55515f; border-radius: 4px; }
+.chips, #nextTopic, h1, #nextTitle, .byline, #nextByline, .card-links { flex-shrink: 0; }
 .results-heading { margin-top: 28px; }
 .results-heading p { font-size: 12px; color: var(--muted); }
 .export { display: inline-block; margin: 8px 8px 16px 0; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; font-size: 11px; text-decoration: none; }
@@ -98,7 +104,7 @@ select { min-width: 0; width: 100%; font-size: 12px; background: var(--panel); c
 @media (hover: hover) {
   .action:not(.keep):not(:disabled):hover { background: #29292f; }
   .action.keep:not(:disabled):hover { background: #f2eefc; }
-  header a:hover, .card-copy > a:hover, .under button:not(:disabled):hover { color: var(--ink); }
+  header a:hover, .card-links a:hover, #readDescription:hover, .under button:not(:disabled):hover { color: var(--ink); }
 }
 @media (min-width: 700px) {
   #discover { padding-top: 12px; padding-bottom: 20px; gap: 16px; }
@@ -153,8 +159,6 @@ select { min-width: 0; width: 100%; font-size: 12px; background: var(--panel); c
 #settingsError { color: #efb5b5; font-size: 12px; line-height: 1.5; }
 .card-note { display: flex; flex-direction: column; }
 .card-note > span { flex-shrink: 0; }
-.card-note p { flex-shrink: 1; min-height: 0; }
-#readDescription { flex-shrink: 0; width: fit-content; padding: 8px 0; background: none; border: 0; color: var(--muted); font-size: 11px; }
 #descriptionDialog { width: min(620px, calc(100vw - 32px)); }
 #descriptionDialog .tag-heading { align-items: flex-start; padding: 0; }
 #descriptionTitle { font-size: 16px; line-height: 1.5; margin: 8px 0; }

@@ -89,12 +89,17 @@ function showNote(v, container, label, text) {
   const note = cardNote(v);
   $(container).hidden = !note;
   $(label).textContent = note?.label || '';
-  $(text).textContent = note?.text || '';
+  const content = note?.text || '';
+  if ($(text).textContent !== content) {
+    $(text).textContent = content;
+    $(text).scrollTop = 0;
+  }
 }
 function showCard(v) {
   if (currentId === v.id) {updateCardMetadata(v); loadMetadata(v); return;}
   const changing = currentId !== null;
   currentId = v.id;
+  $('reason').scrollTop = 0;
   if (changing) {
     card.classList.remove('arriving');
     void card.offsetWidth;
@@ -127,6 +132,7 @@ function showNext(v) {
     loadMetadata(v); return;
   }
   nextId = v.id;
+  $('nextNoteText').scrollTop = 0;
   const img = element('img');
   img.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`;
   img.alt = ''; img.draggable = false; img.decoding = 'async';
@@ -196,7 +202,7 @@ function updateCardMetadata(v) {
   $('byline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
   const badge = $('media').querySelector('.duration');
   if (badge) badge.textContent = duration(v.duration_seconds);
-  $('readDescription').hidden = !v.description || v.description.length < 200;
+  $('readDescription').hidden = !v.description?.trim();
 }
 function loadMetadata(v) {
   if (metadataRequests.has(v.id)) return;
@@ -291,7 +297,7 @@ document.addEventListener('keydown', e => {
     if (['1','2','3'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {e.preventDefault(); chooseTag(`maybe${e.key}`);}
     return;
   }
-  if (e.target.closest('input,select,textarea,button,a,iframe') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest('input,select,textarea,button,a,iframe,.note-scroll') || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key.toLowerCase() === 'z') return void undo();
   if (view !== 'pending') return;
   const action = {ArrowLeft:'pass',ArrowRight:'keep','1':'maybe1','2':'maybe2','3':'maybe3',l:'maybe2',L:'maybe2'}[e.key];
@@ -323,7 +329,7 @@ function exitCard(status) {
   return new Promise(resolve => setTimeout(resolve, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240));
 }
 const gesture = Swipe.attach(card, {
-  canStart: e => !busy && !$('tagDialog').open && !e.target.closest('a,button,iframe'),
+  canStart: e => !busy && !$('tagDialog').open && !e.target.closest('a,button,iframe,.note-scroll'),
   onActive: active => {pointer = active;},
   onMove: (dx, dy) => {card.classList.remove('arriving'); card.classList.add('dragging'); moveCard(dx, dy);},
   onRelease: choice => decide(currentId, choice),

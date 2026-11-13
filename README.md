@@ -34,7 +34,8 @@ public videos in `catalog.example.json`.
   affect the displayed list.
 - Card space shows a YouTube description when supplied in the catalog, otherwise
   a clearly labeled selection note. Generic history placeholders are hidden;
-  the full description opens on demand. The server reads cached descriptions and
+  the text area scrolls independently. A **Description** button beside **YouTube**
+  opens the complete text in a larger modal. The server reads cached descriptions and
   never requests YouTube while you swipe.
 
 Tag names can be changed using **Edit tags** below the swipe area. The three
