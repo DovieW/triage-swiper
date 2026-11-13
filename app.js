@@ -39,7 +39,8 @@ function matching() {
 function render() {
   const selected = videos.filter(v => statusOf(v.id) === 'keep');
   $('keptCount').textContent = selected.length;
-  $('headerKeptCount').textContent = selected.length;
+  $('shortlistCount').textContent = selected.length || '';
+  $('shortlistCount').hidden = selected.length === 0;
   $('keptTime').textContent = `${totalDuration(selected)} selected`;
   $('pendingCount').textContent = videos.filter(v => statusOf(v.id) === 'pending').length;
   document.querySelectorAll('.tab').forEach(el => {

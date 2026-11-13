@@ -81,7 +81,7 @@ def make_handler(source, database, extra_source=None):
                 if path.endswith('.txt'):
                     return self.send(200, ''.join(v['url'] + '\n' for v in selected), 'text/plain; charset=utf-8', 'selected-talks.txt')
                 return self.send(200, {'video_count': len(selected), 'duration_seconds': sum(v.get('duration_seconds') or 0 for v in selected), 'unknown_duration_count': sum(v.get('duration_seconds') is None for v in selected), 'videos': selected}, filename='selected-talks.json')
-            assets = {'/swipe.js': ('swipe.js', 'text/javascript; charset=utf-8'), '/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/style.css': ('style.css', 'text/css; charset=utf-8')}
+            assets = {'/favicon.svg': ('favicon.svg', 'image/svg+xml'), '/swipe.js': ('swipe.js', 'text/javascript; charset=utf-8'), '/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/style.css': ('style.css', 'text/css; charset=utf-8')}
             if path in assets:
                 name, mime = assets[path]
                 return self.send(200, (ROOT / name).read_bytes(), mime)
