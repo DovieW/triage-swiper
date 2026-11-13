@@ -20,12 +20,13 @@ python3 server.py
 Open **http://127.0.0.1:8789**. On a fresh installation, the app loads the three
 public videos in `catalog.example.json`.
 
-- Swipe right to **Keep**, left to **Pass**.
-- Buttons select **Maybe 1** (strongest interest), **Maybe 2** (undecided), or
-  **Maybe 3** (long shot).
+- Swipe right to **Keep**, left to **Toss**.
+- Buttons are **Toss**, **Tag**, and **Keep**. Tag opens a compact menu for
+  **Maybe 1** (strongest interest), **Maybe 2** (undecided), or **Maybe 3**
+  (long shot). Choose a level to save and advance; dismiss to leave the card unchanged.
 - Keyboard: ← / →, 1 / 2 / 3, and Z to undo.
 - Undo applies to choices made in the current tab session. Other decisions can
-  be edited from Shortlist, Maybe, and Passed.
+  be edited from Shortlist, Maybe, and Tossed.
 - The card reserves single-finger gestures for swiping; pinch zoom remains
   available. Use the Shortlist link or scroll outside the card for filters.
 - Preview videos in an overlay, or open them on YouTube if embedding is disabled.
@@ -41,7 +42,7 @@ is retained for compatibility with the original app:
 | --- | --- |
 | `catalog.json` | Your base catalog; overrides the bundled example when present |
 | `history-videos.json` | Additional videos imported from Takeout |
-| `decisions.sqlite3` | Shared Keep, Pass, and Maybe choices |
+| `decisions.sqlite3` | Shared Keep, Toss, and Maybe choices |
 | `history-import-report.json` | Summary of the latest history import |
 
 These files stay outside the repo. Takeout archives, local JSON files, databases,
@@ -61,7 +62,8 @@ python3 server.py --source /path/to/catalog.json --database /path/to/decisions.s
 
 Other options: `--host`, `--port`, and `--extra-source`. Run with `--help` for
 details. Back up SQLite while the server is stopped. Existing legacy `later`
-choices migrate once to `maybe2`.
+choices migrate once to `maybe2`. Toss keeps the original internal `pass` value,
+so existing decisions need no migration.
 
 ## Phone / Tailscale
 

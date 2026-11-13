@@ -57,7 +57,7 @@ function render() {
     showNext(matches[1]);
   } else {
     currentId = null;
-    $('listTitle').textContent = {keep: 'Your shortlist', maybe: 'Your maybes', pass: 'Passed talks'}[view];
+    $('listTitle').textContent = {keep: 'Your shortlist', maybe: 'Your maybes', pass: 'Tossed talks'}[view];
     $('listSummary').textContent = `${matches.length} talks · ${totalDuration(matches)} in this view`;
     $('exports').hidden = view !== 'keep';
     $('list').replaceChildren();
@@ -69,7 +69,7 @@ function render() {
       const link = element('a', v.title); link.href = v.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
       details.append(link, element('p', `${v.channel} · ${duration(v.duration_seconds)} · ${v.category}`));
       const select = element('select'); select.setAttribute('aria-label', `Decision for ${v.title}`);
-      [['keep','Keep'],['maybe1','Maybe 1 · Strongest'],['maybe2','Maybe 2 · Undecided'],['maybe3','Maybe 3 · Long shot'],['pass','Pass'],['pending','Review again']].forEach(([value, label]) => select.add(new Option(label, value)));
+      [['keep','Keep'],['maybe1','Maybe 1 · Strongest'],['maybe2','Maybe 2 · Undecided'],['maybe3','Maybe 3 · Long shot'],['pass','Toss'],['pending','Review again']].forEach(([value, label]) => select.add(new Option(label, value)));
       select.value = statusOf(v.id); select.disabled = busy;
       select.addEventListener('change', () => decide(v.id, select.value));
       row.append(img, details, select); $('list').append(row);
@@ -118,8 +118,8 @@ function showNext(v) {
 let feedbackTimer;
 function feedback(status) {
   clearTimeout(feedbackTimer);
-  $('gestureStatus').textContent = {keep:'Kept', pass:'Passed', maybe1:'Maybe 1 · Strongest', maybe2:'Maybe 2 · Undecided', maybe3:'Maybe 3 · Long shot', pending:'Restored'}[status];
-  feedbackTimer = setTimeout(() => {$('gestureStatus').textContent = '← Pass · Keep →';}, 1800);
+  $('gestureStatus').textContent = {keep:'Kept', pass:'Tossed', maybe1:'Maybe 1 · Strongest', maybe2:'Maybe 2 · Undecided', maybe3:'Maybe 3 · Long shot', pending:'Restored'}[status];
+  feedbackTimer = setTimeout(() => {$('gestureStatus').textContent = '← Toss · Keep →';}, 1800);
 }
 async function decide(id, status, undo = false) {
   if (busy || !id) return;
@@ -159,27 +159,57 @@ async function undo() {
   } catch (err) { error(`Could not undo: ${err.message}`); }
 }
 async function refresh() {
-  if (busy || pointer || !videos.length || document.hidden) return;
+  if (busy || pointer || $('tagDialog').open || !videos.length || document.hidden) return;
   try {
     const latest = await api('/api/decisions');
-    if (busy || pointer) return;
+    if (busy || pointer || $('tagDialog').open) return;
     decisions = latest;
     $('saveStatus').textContent = 'All choices saved'; render();
   } catch (_) { $('saveStatus').textContent = 'Offline · reconnect to save'; }
 }
 $('closePreview').onclick = () => $('previewDialog').close();
 $('previewDialog').addEventListener('close', () => $('player').replaceChildren());
-$('previewDialog').addEventListener('click', e => {
-  if (e.target !== $('previewDialog')) return;
-  const r = e.target.getBoundingClientRect();
-  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.target.close();
+for (const dialog of [$('previewDialog'), $('tagDialog')]) {
+  dialog.addEventListener('click', e => {
+    if (e.target !== dialog) return;
+    const r = dialog.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close();
+  });
+}
+let taggedId = null;
+function openTag() {
+  if (busy || !currentId) return;
+  taggedId = currentId;
+  $('tag').setAttribute('aria-expanded', 'true');
+  $('tagDialog').showModal();
+}
+function chooseTag(level) {
+  if (!taggedId || busy) return;
+  const id = taggedId;
+  $('tagDialog').close();
+  decide(id, level);
+}
+$('tag').onclick = openTag;
+$('closeTag').onclick = () => $('tagDialog').close();
+$('tagDialog').addEventListener('close', () => {
+  taggedId = null;
+  $('tag').setAttribute('aria-expanded', 'false');
 });
-['maybe1', 'maybe2', 'maybe3'].forEach(level => {$(level).onclick = () => decide(currentId, level);});
+document.querySelectorAll('[data-tag]').forEach(button => {
+  button.onclick = () => chooseTag(button.dataset.tag);
+});
+$('toss').onclick = () => decide(currentId, 'pass');
+$('keep').onclick = () => decide(currentId, 'keep');
 $('undo').onclick = undo;
 document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => {if (busy) return; view = tab.dataset.view; currentId = null; render(); $('talkNotes').hidden = view !== 'pending'; if (view === 'pending') window.scrollTo({top:0, behavior:'smooth'});});
 ['topic','channel','duration','order','maybeLevel'].forEach(id => $(id).onchange = () => {currentId = null; render();});
 $('clearFilters').onclick = () => {['topic','channel','duration'].forEach(id => $(id).value = ''); render();};
 document.addEventListener('keydown', e => {
+  if ($('previewDialog').open) return;
+  if ($('tagDialog').open) {
+    if (['1','2','3'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {e.preventDefault(); chooseTag(`maybe${e.key}`);}
+    return;
+  }
   if (e.target.closest('input,select,textarea,button,a,iframe') || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key.toLowerCase() === 'z') return void undo();
   if (view !== 'pending') return;
@@ -212,7 +242,7 @@ function exitCard(status) {
   return new Promise(resolve => setTimeout(resolve, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240));
 }
 const gesture = Swipe.attach(card, {
-  canStart: e => !busy && !e.target.closest('a,button,iframe'),
+  canStart: e => !busy && !$('tagDialog').open && !e.target.closest('a,button,iframe'),
   onActive: active => {pointer = active;},
   onMove: (dx, dy) => {card.classList.remove('arriving'); card.classList.add('dragging'); moveCard(dx, dy);},
   onRelease: choice => decide(currentId, choice),
