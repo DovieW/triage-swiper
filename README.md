@@ -32,6 +32,9 @@ public videos in `catalog.example.json`.
 - Preview videos in an overlay, or open them on YouTube if embedding is disabled.
 - Export the full Keep shortlist as JSON or one video URL per line. Filters only
   affect the displayed list.
+- Card space shows a YouTube description when supplied in the catalog, otherwise
+  a clearly labeled selection note. Generic history placeholders are hidden;
+  descriptions are not fetched automatically.
 
 ## Your catalog and saved choices
 
@@ -52,7 +55,8 @@ watch history or personal choices.
 Use `catalog.example.json` as the catalog format. Each video needs a unique
 YouTube `id`, `url`, `title`, `channel`, `category`, and `duration_seconds` (or
 `null` when unknown). Channel IDs, handles, and URLs are needed for history
-imports; notes use `reason`, and publication dates use `published_date`.
+imports; selection notes use `reason`, optional YouTube descriptions use `description`,
+and publication dates use `published_date`.
 Channels are derived from the catalog. Original entries take precedence over
 imported duplicates.
 

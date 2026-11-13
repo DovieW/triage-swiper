@@ -76,6 +76,19 @@ function render() {
     });
   }
 }
+function cardNote(v) {
+  const description = typeof v.description === 'string' ? v.description.trim() : '';
+  if (description) return {label: 'YouTube description', text: description};
+  const reason = typeof v.reason === 'string' ? v.reason.trim() : '';
+  if (!reason || reason === 'From your YouTube watch history.') return null;
+  return {label: 'Selection note', text: reason};
+}
+function showNote(v, container, label, text) {
+  const note = cardNote(v);
+  $(container).hidden = !note;
+  $(label).textContent = note?.label || '';
+  $(text).textContent = note?.text || '';
+}
 function showCard(v) {
   if (currentId === v.id) return;
   const changing = currentId !== null;
@@ -87,7 +100,7 @@ function showCard(v) {
   }
   $('title').textContent = v.title;
   $('byline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
-  $('reason').textContent = v.reason;
+  showNote(v, 'cardNote', 'noteLabel', 'reason');
   $('watch').href = v.url;
   $('chips').textContent = v.category;
   const img = element('img'); img.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`; img.alt = `Thumbnail for ${v.title}`; img.draggable = false; img.decoding = 'async';
@@ -114,6 +127,7 @@ function showNext(v) {
   $('nextTitle').textContent = v.title;
   $('nextTopic').textContent = v.category;
   $('nextByline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
+  showNote(v, 'nextNote', 'nextNoteLabel', 'nextNoteText');
 }
 let feedbackTimer;
 function feedback(status) {
@@ -201,7 +215,7 @@ document.querySelectorAll('[data-tag]').forEach(button => {
 $('toss').onclick = () => decide(currentId, 'pass');
 $('keep').onclick = () => decide(currentId, 'keep');
 $('undo').onclick = undo;
-document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => {if (busy) return; view = tab.dataset.view; currentId = null; render(); $('talkNotes').hidden = view !== 'pending'; if (view === 'pending') window.scrollTo({top:0, behavior:'smooth'});});
+document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => {if (busy) return; view = tab.dataset.view; currentId = null; render(); if (view === 'pending') window.scrollTo({top:0, behavior:'smooth'});});
 ['topic','channel','duration','order','maybeLevel'].forEach(id => $(id).onchange = () => {currentId = null; render();});
 $('clearFilters').onclick = () => {['topic','channel','duration'].forEach(id => $(id).value = ''); render();};
 document.addEventListener('keydown', e => {
