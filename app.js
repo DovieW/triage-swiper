@@ -2,6 +2,8 @@
 const $ = id => document.getElementById(id);
 let videos = [], decisions = {}, view = 'pending', busy = false, history = [], shuffled = [], currentId = null;
 const statusOf = id => decisions[id]?.status || 'pending';
+let tagSettings = {tags: {maybe1:'Maybe 1', maybe2:'Maybe 2', maybe3:'Maybe 3'}, revision:0};
+const tagLabel = key => tagSettings.tags[key] || key;
 const revisionOf = id => decisions[id]?.revision || 0;
 const duration = seconds => {
   if (!Number.isFinite(seconds)) return 'Runtime unknown';
@@ -57,7 +59,7 @@ function render() {
     showNext(matches[1]);
   } else {
     currentId = null;
-    $('listTitle').textContent = {keep: 'Your shortlist', maybe: 'Your maybes', pass: 'Tossed talks'}[view];
+    $('listTitle').textContent = {keep: 'Your shortlist', maybe: 'Tagged talks', pass: 'Tossed talks'}[view];
     $('listSummary').textContent = `${matches.length} talks · ${totalDuration(matches)} in this view`;
     $('exports').hidden = view !== 'keep';
     $('list').replaceChildren();
@@ -69,7 +71,7 @@ function render() {
       const link = element('a', v.title); link.href = v.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
       details.append(link, element('p', `${v.channel} · ${duration(v.duration_seconds)} · ${v.category}`));
       const select = element('select'); select.setAttribute('aria-label', `Decision for ${v.title}`);
-      [['keep','Keep'],['maybe1','Maybe 1 · Strongest'],['maybe2','Maybe 2 · Undecided'],['maybe3','Maybe 3 · Long shot'],['pass','Toss'],['pending','Review again']].forEach(([value, label]) => select.add(new Option(label, value)));
+      [['keep','Keep'],['maybe1',tagLabel('maybe1')],['maybe2',tagLabel('maybe2')],['maybe3',tagLabel('maybe3')],['pass','Toss'],['pending','Review again']].forEach(([value, label]) => select.add(new Option(label, value)));
       select.value = statusOf(v.id); select.disabled = busy;
       select.addEventListener('change', () => decide(v.id, select.value));
       row.append(img, details, select); $('list').append(row);
@@ -90,7 +92,7 @@ function showNote(v, container, label, text) {
   $(text).textContent = note?.text || '';
 }
 function showCard(v) {
-  if (currentId === v.id) return;
+  if (currentId === v.id) {updateCardMetadata(v); loadMetadata(v); return;}
   const changing = currentId !== null;
   currentId = v.id;
   if (changing) {
@@ -100,7 +102,7 @@ function showCard(v) {
   }
   $('title').textContent = v.title;
   $('byline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
-  showNote(v, 'cardNote', 'noteLabel', 'reason');
+  updateCardMetadata(v);
   $('watch').href = v.url;
   $('chips').textContent = v.category;
   const img = element('img'); img.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`; img.alt = `Thumbnail for ${v.title}`; img.draggable = false; img.decoding = 'async';
@@ -113,12 +115,17 @@ function showCard(v) {
     $('previewDialog').showModal();
   });
   $('media').replaceChildren(img, preview, element('span', duration(v.duration_seconds), 'duration'));
+  loadMetadata(v);
 }
 let nextId = null;
 function showNext(v) {
   $('nextCard').hidden = !v;
   if (!v) {nextId = null; return;}
-  if (v.id === nextId) return;
+  if (v.id === nextId) {
+    $('nextByline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
+    showNote(v, 'nextNote', 'nextNoteLabel', 'nextNoteText');
+    loadMetadata(v); return;
+  }
   nextId = v.id;
   const img = element('img');
   img.src = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`;
@@ -128,11 +135,12 @@ function showNext(v) {
   $('nextTopic').textContent = v.category;
   $('nextByline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
   showNote(v, 'nextNote', 'nextNoteLabel', 'nextNoteText');
+  loadMetadata(v);
 }
 let feedbackTimer;
 function feedback(status) {
   clearTimeout(feedbackTimer);
-  $('gestureStatus').textContent = {keep:'Kept', pass:'Tossed', maybe1:'Maybe 1 · Strongest', maybe2:'Maybe 2 · Undecided', maybe3:'Maybe 3 · Long shot', pending:'Restored'}[status];
+  $('gestureStatus').textContent = tagSettings.tags[status] || {keep:'Kept', pass:'Tossed', pending:'Restored'}[status];
   feedbackTimer = setTimeout(() => {$('gestureStatus').textContent = '← Toss · Keep →';}, 1800);
 }
 async function decide(id, status, undo = false) {
@@ -173,17 +181,76 @@ async function undo() {
   } catch (err) { error(`Could not undo: ${err.message}`); }
 }
 async function refresh() {
-  if (busy || pointer || $('tagDialog').open || !videos.length || document.hidden) return;
+  if (busy || pointer || $('tagDialog').open || $('tagSettingsDialog').open || !videos.length || document.hidden) return;
   try {
-    const latest = await api('/api/decisions');
-    if (busy || pointer || $('tagDialog').open) return;
+    const [latest, settings] = await Promise.all([api('/api/decisions'), api('/api/settings')]);
+    if (busy || pointer || $('tagDialog').open || $('tagSettingsDialog').open) return;
     decisions = latest;
+    tagSettings = settings; renderTagNames();
     $('saveStatus').textContent = 'All choices saved'; render();
   } catch (_) { $('saveStatus').textContent = 'Offline · reconnect to save'; }
 }
+const metadataRequests = new Map();
+function updateCardMetadata(v) {
+  showNote(v, 'cardNote', 'noteLabel', 'reason');
+  $('byline').textContent = `${v.channel} · ${duration(v.duration_seconds)}`;
+  const badge = $('media').querySelector('.duration');
+  if (badge) badge.textContent = duration(v.duration_seconds);
+  $('readDescription').hidden = !v.description || v.description.length < 200;
+}
+function loadMetadata(v) {
+  if (metadataRequests.has(v.id)) return;
+  const request = api(`/api/metadata?id=${encodeURIComponent(v.id)}`).then(data => {
+    if (!Object.hasOwn(data, 'description')) {metadataRequests.delete(v.id); return;}
+    Object.assign(v, data);
+    if (!busy && !pointer) render();
+  }).catch(() => {metadataRequests.delete(v.id);});
+  metadataRequests.set(v.id, request);
+}
+$('readDescription').onclick = () => {
+  const video = videos.find(v => v.id === currentId);
+  if (!video?.description) return;
+  $('descriptionTitle').textContent = video.title;
+  $('descriptionText').textContent = video.description;
+  $('descriptionDialog').showModal();
+};
+$('closeDescription').onclick = () => $('descriptionDialog').close();
+function renderTagNames() {
+  document.querySelectorAll('[data-tag]').forEach(button => {
+    const key = button.dataset.tag;
+    button.querySelector('span').textContent = tagLabel(key);
+    const hint = button.querySelector('small');
+    hint.hidden = tagLabel(key) !== `Maybe ${key.slice(-1)}`;
+  });
+  const current = $('maybeLevel').value;
+  $('maybeLevel').replaceChildren(new Option('All tags', ''));
+  Object.keys(tagSettings.tags).forEach(key => $('maybeLevel').add(new Option(tagLabel(key), key)));
+  $('maybeLevel').value = current;
+}
+$('editTags').onclick = async () => {
+  if (busy) return;
+  try {
+    tagSettings = await api('/api/settings');
+    ['1','2','3'].forEach(n => {$(`tagName${n}`).value = tagLabel(`maybe${n}`);});
+    $('settingsError').hidden = true;
+    $('tagSettingsDialog').showModal();
+  } catch (err) {error(`Could not load tag names: ${err.message}`);}
+};
+$('closeTagSettings').onclick = () => $('tagSettingsDialog').close();
+$('resetTags').onclick = () => ['1','2','3'].forEach(n => {$(`tagName${n}`).value = `Maybe ${n}`;});
+$('tagSettingsForm').onsubmit = async e => {
+  e.preventDefault();
+  const tags = Object.fromEntries(['1','2','3'].map(n => [`maybe${n}`, $(`tagName${n}`).value.trim()]));
+  $('saveTags').disabled = true; $('settingsError').hidden = true;
+  try {
+    tagSettings = await api('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tags, revision:tagSettings.revision})});
+    renderTagNames(); $('tagSettingsDialog').close(); render();
+  } catch (err) {$('settingsError').textContent = err.message; $('settingsError').hidden = false;}
+  finally {$('saveTags').disabled = false;}
+};
 $('closePreview').onclick = () => $('previewDialog').close();
 $('previewDialog').addEventListener('close', () => $('player').replaceChildren());
-for (const dialog of [$('previewDialog'), $('tagDialog')]) {
+for (const dialog of [$('previewDialog'), $('tagDialog'), $('tagSettingsDialog'), $('descriptionDialog')]) {
   dialog.addEventListener('click', e => {
     if (e.target !== dialog) return;
     const r = dialog.getBoundingClientRect();
@@ -219,7 +286,7 @@ document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => {if (busy) 
 ['topic','channel','duration','order','maybeLevel'].forEach(id => $(id).onchange = () => {currentId = null; render();});
 $('clearFilters').onclick = () => {['topic','channel','duration'].forEach(id => $(id).value = ''); render();};
 document.addEventListener('keydown', e => {
-  if ($('previewDialog').open) return;
+  if ($('previewDialog').open || $('tagSettingsDialog').open || $('descriptionDialog').open) return;
   if ($('tagDialog').open) {
     if (['1','2','3'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {e.preventDefault(); chooseTag(`maybe${e.key}`);}
     return;
@@ -267,8 +334,8 @@ window.addEventListener('focus', refresh); document.addEventListener('visibility
 setInterval(refresh, 15000);
 async function init() {
   try {
-    const [talks, state] = await Promise.all([api('/api/talks'), api('/api/decisions')]);
-    videos = talks.videos; decisions = state;
+    const [talks, state, settings] = await Promise.all([api('/api/talks'), api('/api/decisions'), api('/api/settings')]);
+    videos = talks.videos; decisions = state; tagSettings = settings; renderTagNames();
     const channelOrder = [...new Set(videos.map(v => v.channel))];
     videos.sort((a,b) => channelOrder.indexOf(a.channel) - channelOrder.indexOf(b.channel) || (b.published_date || b.watched_at || '').localeCompare(a.published_date || a.watched_at || ''));
     shuffled = [...videos];

@@ -135,3 +135,27 @@ select { min-width: 0; width: 100%; font-size: 12px; background: var(--panel); c
 .tag-options small { font-size: 10px; color: var(--muted); }
 .tag-options button:active { background: #413a50; }
 @media (hover: hover) { .tag-options button:hover { background: #39343f; } }
+
+/* The picker is a bottom sheet on phones, centered on larger screens. */
+@media (min-width: 700px) { #tagDialog { inset: 0; margin: auto; height: fit-content; max-height: calc(100dvh - 40px); } }
+.library-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+#editTags { background: none; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-size: 11px; min-height: 36px; padding: 8px 12px; }
+#tagSettingsDialog, #descriptionDialog { width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 16px; border: 1px solid #49464f; border-radius: 20px; background: #222126; color: var(--ink); box-shadow: 0 16px 60px #0008; }
+#tagSettingsDialog::backdrop, #descriptionDialog::backdrop { background: #0008; }
+.dialog-close { flex-shrink: 0; width: 44px; height: 44px; border: 0; border-radius: 10px; background: none; color: var(--muted); font-size: 24px; }
+#tagSettingsForm { padding: 0 8px 4px; }
+.settings-help { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 12px 0 20px; }
+#tagSettingsForm label { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; font-size: 11px; color: var(--muted); }
+#tagSettingsForm input { width: 100%; min-height: 44px; border: 1px solid #49464f; border-radius: 10px; background: #19181d; color: var(--ink); padding: 10px 12px; font: inherit; font-size: 16px; }
+.settings-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+.settings-actions button { min-height: 44px; border: 1px solid var(--line); border-radius: 12px; background: none; color: var(--ink); padding: 10px 16px; font-size: 12px; }
+#saveTags { background: #e6e2f2; color: #26222e; }
+#settingsError { color: #efb5b5; font-size: 12px; line-height: 1.5; }
+.card-note { display: flex; flex-direction: column; }
+.card-note > span { flex-shrink: 0; }
+.card-note p { flex-shrink: 1; min-height: 0; }
+#readDescription { flex-shrink: 0; width: fit-content; padding: 8px 0; background: none; border: 0; color: var(--muted); font-size: 11px; }
+#descriptionDialog { width: min(620px, calc(100vw - 32px)); }
+#descriptionDialog .tag-heading { align-items: flex-start; padding: 0; }
+#descriptionTitle { font-size: 16px; line-height: 1.5; margin: 8px 0; }
+#descriptionText { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; color: #d2d2db; }

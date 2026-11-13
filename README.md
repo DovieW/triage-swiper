@@ -26,7 +26,7 @@ public videos in `catalog.example.json`.
   (long shot). Choose a level to save and advance; dismiss to leave the card unchanged.
 - Keyboard: ← / →, 1 / 2 / 3, and Z to undo.
 - Undo applies to choices made in the current tab session. Other decisions can
-  be edited from Shortlist, Maybe, and Tossed.
+  be edited from Shortlist, Tagged, and Tossed.
 - The card reserves single-finger gestures for swiping; pinch zoom remains
   available. Use the Shortlist link or scroll outside the card for filters.
 - Preview videos in an overlay, or open them on YouTube if embedding is disabled.
@@ -34,7 +34,14 @@ public videos in `catalog.example.json`.
   affect the displayed list.
 - Card space shows a YouTube description when supplied in the catalog, otherwise
   a clearly labeled selection note. Generic history placeholders are hidden;
-  descriptions are not fetched automatically.
+  the full description opens on demand. The server reads cached descriptions and
+  never requests YouTube while you swipe.
+
+Tag names can be changed using **Edit tags** below the swipe area. The three
+slots default to Maybe 1 / Maybe 2 / Maybe 3; renaming them preserves existing
+choices and syncs across devices. Reset defaults changes the editor fields;
+press Save to apply. The menu is centered on desktop and a compact bottom sheet
+on phones.
 
 ## Your catalog and saved choices
 
@@ -45,7 +52,7 @@ is retained for compatibility with the original app:
 | --- | --- |
 | `catalog.json` | Your base catalog; overrides the bundled example when present |
 | `history-videos.json` | Additional videos imported from Takeout |
-| `decisions.sqlite3` | Shared Keep, Toss, and Maybe choices |
+| `decisions.sqlite3` | Shared choices, tag names, and cached YouTube metadata |
 | `history-import-report.json` | Summary of the latest history import |
 
 These files stay outside the repo. Takeout archives, local JSON files, databases,
@@ -116,6 +123,36 @@ saved choices. Restart the server and reload the page after changing catalogs.
 Takeout does not provide duration or publication date. Imported values remain
 unknown; totals report unknown runtimes separately, and the duration filter has
 an explicit unknown option. The app does not download videos.
+
+## Cached descriptions and runtimes
+
+```sh
+python3 fetch_metadata.py
+```
+
+This optional batch tool uses one YouTube watch-page HTML request per video,
+with one worker and two seconds between request starts by default. Optional
+`--workers 1` through `4` share the same request pacing (`--delay`). It extracts the
+creator's description and, when available, runtime and publication date. No
+video or audio files are downloaded. It uses the same `--source`,
+`--extra-source`, and `--database` options as the server.
+
+Successful results are cached in the `video_metadata` SQLite table. Re-running
+skips cached videos and retries failures. Progress is recorded privately in
+`metadata-progress.json` beside the database. YouTube page-format changes,
+consent pages, and unavailable videos can prevent extraction; failed entries
+are reported and selection notes remain available as a fallback. HTTP 429/503
+responses pause all requests with increasing cooldowns and respect numeric
+Retry-After values. Use `--initial-delay SECONDS` to wait before resuming a batch.
+A single page fetch can be quick; a full library can take minutes or longer when
+YouTube throttles requests. None of this waiting affects the app.
+
+The app preloads cached descriptions for the current and next cards. Description
+text is fetched separately from the compact catalog; swipes never wait for
+YouTube. A running batch becomes visible as entries arrive, without restarting
+the server. Reload to refresh all catalog runtimes, or let current/next card
+metadata load normally. New cache tables require one server restart when
+upgrading from a version without this feature.
 
 ## Tests
 

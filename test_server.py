@@ -112,6 +112,38 @@ class PickerTest(unittest.TestCase):
         self.assertEqual(self.choose('maybe1', 4)[0], 409)
         self.assertEqual(self.choose('later', 5)[1]['status'], 'maybe2')
 
+    def test_tag_names_persist_and_choices_keep_their_original_ids(self):
+        self.assertEqual(self.choose('maybe1', 0)[0], 200)
+        names = {'maybe1': 'Consider', 'maybe2': 'Review', 'maybe3': 'Backup'}
+        self.assertEqual(self.request('/api/settings')[1]['revision'], 0)
+        status, settings = self.request('/api/settings', {'tags': names, 'revision': 0})
+        self.assertEqual(status, 200)
+        self.assertEqual(settings, {'tags': names, 'revision': 1})
+        self.stop()
+        self.start()
+        self.assertEqual(self.request('/api/settings')[1], settings)
+        self.assertEqual(self.request('/api/decisions')[1][self.vid]['status'], 'maybe1')
+        self.assertEqual(self.request('/api/settings', {'tags': names, 'revision': 0})[0], 409)
+
+    def test_tag_names_validate_and_reject_cross_origin_writes(self):
+        for names in ({'maybe1': 'One'}, {'maybe1': '', 'maybe2': 'Two', 'maybe3': 'Three'}, {'maybe1': 'Same', 'maybe2': 'same', 'maybe3': 'Three'}, {'maybe1': 'X'*33, 'maybe2': 'Two', 'maybe3': 'Three'}):
+            self.assertEqual(self.request('/api/settings', {'tags': names, 'revision': 0})[0], 400)
+        names = {'maybe1': 'One', 'maybe2': 'Two', 'maybe3': 'Three'}
+        self.assertEqual(self.request('/api/settings', {'tags': names, 'revision': 0}, 'https://example.com')[0], 403)
+
+    def test_metadata_is_cached_and_catalog_payload_stays_small(self):
+        self.assertEqual(self.request('/api/metadata?id=' + self.vid)[1], {})
+        cached = {'description': 'Description '*1000, 'duration_seconds': 321, 'published_date': '2026-01-02'}
+        with sqlite3.connect(self.db) as db:
+            db.execute('INSERT INTO video_metadata VALUES (?,?,?)', (self.vid, json.dumps(cached), '2026-01-03'))
+        self.assertEqual(self.request('/api/metadata?id=' + self.vid)[1], cached)
+        video = next(v for v in self.request('/api/talks')[1]['videos'] if v['id'] == self.vid)
+        self.assertEqual(video['duration_seconds'], 321)
+        self.assertNotIn('description', video)
+        self.assertEqual(self.request('/api/metadata?id=unknown')[0], 404)
+        self.assertEqual(self.choose('keep', 0)[0], 200)
+        self.assertEqual(self.request('/api/export.json')[1]['duration_seconds'], 321)
+
     def test_validation_and_origin(self):
         self.assertEqual(self.choose('bogus', 0)[0], 400)
         self.assertEqual(self.request('/api/decision', {'id': 'missing', 'status': 'keep', 'revision': 0})[0], 400)
